@@ -105,13 +105,19 @@ def download_float_files(wmo: str, dac: str, dest: str,
         st.error(f"FTP error: {e}")
     return saved
 
+# ── Detect Streamlit Cloud environment ────────────────────────────────────────
+IS_CLOUD = os.environ.get("STREAMLIT_SHARING_MODE") is not None
+
 # ── Sidebar ────────────────────────────────────────────────────────────────────
 with st.sidebar:
     st.title("🌊 Argo Float Monitor")
     st.divider()
 
-    mode = st.radio("Data source", ["Local files", "Download from GDAC"],
-                    index=0, horizontal=False)
+    if IS_CLOUD:
+        mode = "Download from GDAC"
+    else:
+        mode = st.radio("Data source", ["Local files", "Download from GDAC"],
+                        index=0, horizontal=False)
 
     wmo = st.text_input("WMO number", value="5906551")
 
