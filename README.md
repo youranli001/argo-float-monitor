@@ -2,21 +2,24 @@
 
 An interactive Streamlit dashboard for monitoring any Argo profiling float — health, data delivery, and BGC profiles. Built as a demonstration of PMEL-style fleet monitoring capability.
 
-## Installation
+**Live demo: [argo-float-monitor.streamlit.app](https://argo-float-monitor.streamlit.app)**
+
+## Usage
+
+### Option 1 — Use the live app
+
+Open [argo-float-monitor.streamlit.app](https://argo-float-monitor.streamlit.app), enter any WMO number, and click Download. The app fetches all standard files directly from the IFREMER GDAC FTP server.
+
+### Option 2 — Run locally
 
 ```bash
+git clone https://github.com/youranli001/argo-float-monitor.git
+cd argo-float-monitor
 pip install -r requirements.txt
 streamlit run argo_monitor.py
 ```
 
-## Data access
-
-The sidebar offers two modes:
-
-- **Local files** — point to a folder containing the float NetCDF files (e.g. `5906551_prof.nc`, `5906551_tech.nc`)
-- **Download from GDAC** — enter any WMO number and click Download; the app connects to the IFREMER FTP server (`ftp.ifremer.fr`), locates the float across all DACs, and downloads all standard files to a local cache (`~/.argo_cache/{wmo}/`)
-
-Any float in the Argo network can be loaded by WMO number.
+When running locally, choose between loading local NetCDF files or downloading any float by WMO number from GDAC.
 
 ## Dashboard tabs
 
