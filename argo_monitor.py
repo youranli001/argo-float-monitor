@@ -106,7 +106,7 @@ def download_float_files(wmo: str, dac: str, dest: str,
     return saved
 
 # ── Detect Streamlit Cloud environment ────────────────────────────────────────
-IS_CLOUD = os.environ.get("STREAMLIT_SHARING_MODE") is not None
+IS_CLOUD = os.getenv('USER') == 'appuser'
 
 # ── Sidebar ────────────────────────────────────────────────────────────────────
 with st.sidebar:
