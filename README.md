@@ -4,6 +4,12 @@
 [![Python](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
+
+
+https://github.com/user-attachments/assets/dcda7c82-b40a-4e83-8b6a-64d329dec05a
+
+
+
 An interactive Streamlit dashboard for monitoring any Argo profiling float — metadata,
 engineering health, data delivery, profiles, QC, and trajectory measurements.
 Built as a demonstration of PMEL-style fleet monitoring capability.
