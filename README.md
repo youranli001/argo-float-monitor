@@ -1,14 +1,17 @@
 # Argo Float Monitoring Dashboard
 
-An interactive Streamlit dashboard for monitoring any Argo profiling float — health, data delivery, and BGC profiles. Built as a demonstration of PMEL-style fleet monitoring capability.
+An interactive Streamlit dashboard for monitoring any Argo profiling float — metadata,
+engineering health, data delivery, profiles, QC, and trajectory measurements.
+Built as a demonstration of PMEL-style fleet monitoring capability.
 
-**Live demo: [argo-float-monitor.streamlit.app](https://argo-float-monitor.streamlit.app)**
+**Live demo:** [argo-float-monitor.streamlit.app](https://argo-float-monitor.streamlit.app)
 
 ## Usage
 
 ### Option 1 — Use the live app
 
-Open [argo-float-monitor.streamlit.app](https://argo-float-monitor.streamlit.app), enter any WMO number, and click Download. The app fetches all standard files directly from the IFREMER GDAC FTP server.
+Open the live demo, enter any WMO number, and click Download.
+The app fetches all standard files directly from the IFREMER GDAC FTP server.
 
 ### Option 2 — Run locally
 
@@ -19,31 +22,55 @@ pip install -r requirements.txt
 streamlit run argo_monitor.py
 ```
 
-When running locally, choose between loading local NetCDF files or downloading any float by WMO number from GDAC.
+Running locally lets you point at NetCDF files already on disk, or download any float
+by WMO number from GDAC.
 
 ## Dashboard tabs
 
-**Float Track** — profile positions on an interactive map, colored by cycle number, with start/end markers and position summary statistics
+**Main Information**
+- Header
+- Interactive global map of profile trajectories
+- Main info, tracking lifecycle, deployment, and cycle activity cards
 
-**Float Health** — engineering telemetry from `_tech.nc`:
-- Buoyancy pump on-time with linear trend (increasing trend = early degradation signal)
-- Battery voltage and current
-- Internal vacuum (sudden drop = water intrusion risk)
-- Surface pressure offset (flag threshold: ±20 dbar)
-- Reposition count per cycle (>0 = subsurface velocity estimate unreliable)
-- CTD status hex flag anomalies decoded and tabulated
+**Float Metadata** (`meta.nc`)
+- Argo project information
+- Platform information
+- Deployment information
+- Sensors
+- Factory calibration
+- Launch & mission configuration parameters
 
-**Data Delivery** — per-cycle transmission delay from ascent end to first Iridium transmission, compared against the 12-hour Argo real-time target; includes delay distribution histogram and subsurface velocity QC summary
+**Float Health** (`tech.nc`)
+- Health summary with customized diagnoses
+- Pressure (surface offset, internal vacuum, air bladder)
+- Buoyancy (pump activity with linear trend)
+- Battery (voltage and current under different loads)
+- Communication & timing
+- Repositions & drift
+- Ice detection
+- Piston positions (Now / Surface / Park)
+- Decoded status flags
 
-**Profile Explorer** — for any selected cycle:
-- Temperature and salinity depth profiles (raw vs DMQC-adjusted)
-- T-S diagram (water mass fingerprint)
-- BGC parameters (O₂, Chl-a, NO₃⁻, pH, BBP700) from `_Sprof.nc` if available
-- SCIENTIFIC_CALIB records expandable per cycle
-- DATA_MODE timeline across all cycles
-- All-cycles T/S overlay (colored blue→red, early→late)
+**Profiles**
+- Section plots: depth–time heatmap per parameter
+- All-profiles overlay grid: every cycle drawn together
+- Single-cycle profile: T / S / T-S diagram + BGC parameters, with per-parameter DATA_MODE annotation
 
-**BGC Time Series** — BGC parameters along trajectory from `_Dtraj.nc`, showing raw vs adjusted values over the float lifetime; plus BGC depth profiles for any selected cycle
+**QC**
+- Data mode of all cycles, grouped by parameter family
+- Per-parameter QC heatmaps (depth × cycle) with vertical legends for QC flag, Profile QC, and DATA_MODE
+- Scientific calibration records (per-cycle equation / coefficient / comment)
+- Subsurface velocity quality (reposition counting from `tech.nc`)
+
+**Data Delivery**
+- Variables and parameters table with P02 vocabulary references
+- Surface-to-GDAC delivery latency benchmarked against the 12-hour Argo target
+- Delayed-mode eligibility coverage table
+
+**Trajectory data** (`Rtraj.nc` / `Dtraj.nc`)
+- MEASUREMENT_CODE reference (descent, park, deep stop, surface, GPS fix)
+- Float track map with Rtraj vs Dtraj comparison and POSITION_QC markers
+- Parameters along trajectory: stacked time series, raw vs DMQC-adjusted
 
 ## Author
 
