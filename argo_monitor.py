@@ -1352,7 +1352,7 @@ def make_overlay_grid(ds, params, ncols=3):
 
 
 # ── Data loaders ───────────────────────────────────────────────────────────────
-@st.cache_data(show_spinner=False)
+@st.cache_data(show_spinner=False, max_entries=2)
 def load_datasets(data_dir: str, wmo: str) -> dict:
     D = data_dir.rstrip(r"\/") + os.sep
     suffixes = {
@@ -1370,7 +1370,7 @@ def load_datasets(data_dir: str, wmo: str) -> dict:
     return ds
 
 
-@st.cache_data(show_spinner=False)
+@st.cache_data(show_spinner=False, max_entries=2)
 def parse_tech(data_dir: str, wmo: str) -> pd.DataFrame | None:
     """Parse tech.nc long format → tidy DataFrame with columns [cycle, param, value]."""
     path = data_dir.rstrip(r"\/") + os.sep + wmo + "_tech.nc"
