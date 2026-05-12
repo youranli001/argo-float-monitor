@@ -56,38 +56,59 @@ st.markdown("""
 # Show a yellow warning bar on iPhone/iPad/Android so visitors know that
 # some heavy tabs may crash Safari's renderer. The dashboard is built for
 # desktop viewing with many interactive plotly figures per tab.
+# Banner is positioned BELOW Streamlit's toolbar (top ~3rem) so it isn't
+# hidden on mobile Safari.
 import streamlit.components.v1 as components
 
 components.html("""
 <script>
 if (/iPhone|iPad|iPod|Android/i.test(navigator.userAgent)) {
-    const banner = document.createElement('div');
-    banner.style.cssText = (
-        'background:#fff3cd;' +
-        'color:#856404;' +
-        'padding:10px 14px;' +
-        'text-align:center;' +
-        'font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;' +
-        'font-size:13px;' +
-        'line-height:1.4;' +
-        'border-bottom:1px solid #ffeaa7;' +
-        'position:fixed;' +
-        'top:0;left:0;right:0;' +
-        'z-index:9999'
-    );
-    banner.innerHTML = (
-        '⚠️ This dashboard renders many interactive plots per tab ' +
-        'and is best viewed on a desktop browser. ' +
-        'Some tabs may not load reliably on mobile.'
-    );
-    // Insert into parent document (Streamlit's iframe wrapper)
-    try {
-        window.parent.document.body.insertBefore(
-            banner, window.parent.document.body.firstChild
-        );
-    } catch (e) {
-        document.body.insertBefore(banner, document.body.firstChild);
+    function showBanner() {
+        try {
+            var doc = window.parent.document;
+            // Don't add twice if user navigates
+            if (doc.getElementById('mobile-warning-banner')) return;
+
+            var banner = doc.createElement('div');
+            banner.id = 'mobile-warning-banner';
+            banner.style.cssText = (
+                'background:#fff3cd;' +
+                'color:#856404;' +
+                'padding:12px 16px;' +
+                'text-align:center;' +
+                'font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;' +
+                'font-size:14px;' +
+                'font-weight:500;' +
+                'line-height:1.45;' +
+                'border:1px solid #ffeaa7;' +
+                'border-radius:6px;' +
+                'margin:12px 16px;' +
+                'box-shadow:0 1px 3px rgba(0,0,0,0.06)'
+            );
+            banner.innerHTML = (
+                '⚠️ <b>This dashboard is best viewed on desktop.</b><br>' +
+                'It renders many interactive plots per tab; mobile browsers ' +
+                'may crash when switching tabs.'
+            );
+            // Insert at top of Streamlit's main content area
+            // (not document.body — that puts it behind the toolbar)
+            var main = doc.querySelector('section.main') ||
+                       doc.querySelector('[data-testid="stMain"]') ||
+                       doc.querySelector('[data-testid="stAppViewContainer"]');
+            if (main) {
+                main.insertBefore(banner, main.firstChild);
+            } else {
+                doc.body.insertBefore(banner, doc.body.firstChild);
+            }
+        } catch (e) {
+            console.log('Banner inject failed:', e);
+        }
     }
+    // Streamlit may not have rendered the main area when this script runs.
+    // Try a few times over the first 2 seconds.
+    setTimeout(showBanner, 100);
+    setTimeout(showBanner, 500);
+    setTimeout(showBanner, 1500);
 }
 </script>
 """, height=0)
