@@ -1,0 +1,37 @@
+name: Streamlit Keepalive
+
+# Keeps the Argo Float Monitor Streamlit Cloud app awake by visiting it with
+# a real headless browser every 6 hours. A plain HTTP GET would only return
+# the static HTML shell — the Python process would never start. Playwright
+# executes JavaScript and opens the WebSocket connection that actually
+# wakes the app. It also pre-loads float 7902198 so a visitor sees a
+# fully-rendered dashboard on first paint.
+
+on:
+  schedule:
+    # Every 6 hours, on the hour, UTC.
+    - cron: '0 */6 * * *'
+  # Allow running manually from the GitHub Actions tab.
+  workflow_dispatch:
+
+jobs:
+  keepalive:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install Playwright
+        run: |
+          pip install --upgrade pip
+          pip install playwright
+          playwright install chromium --with-deps
+
+      - name: Run keepalive
+        run: python scripts/keepalive.py
