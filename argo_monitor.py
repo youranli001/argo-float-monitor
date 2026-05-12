@@ -82,7 +82,7 @@ if (/iPhone|iPad|iPod|Android/i.test(navigator.userAgent)) {
                 'line-height:1.45;' +
                 'border:1px solid #ffeaa7;' +
                 'border-radius:6px;' +
-                'margin:12px 16px;' +
+                'margin:60px 16px 12px 16px;' +
                 'box-shadow:0 1px 3px rgba(0,0,0,0.06)'
             );
             banner.innerHTML = (
