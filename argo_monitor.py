@@ -52,6 +52,45 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
+# ── Mobile banner ─────────────────────────────────────────────────────────────
+# Show a yellow warning bar on iPhone/iPad/Android so visitors know that
+# some heavy tabs may crash Safari's renderer. The dashboard is built for
+# desktop viewing with many interactive plotly figures per tab.
+import streamlit.components.v1 as components
+
+components.html("""
+<script>
+if (/iPhone|iPad|iPod|Android/i.test(navigator.userAgent)) {
+    const banner = document.createElement('div');
+    banner.style.cssText = (
+        'background:#fff3cd;' +
+        'color:#856404;' +
+        'padding:10px 14px;' +
+        'text-align:center;' +
+        'font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;' +
+        'font-size:13px;' +
+        'line-height:1.4;' +
+        'border-bottom:1px solid #ffeaa7;' +
+        'position:fixed;' +
+        'top:0;left:0;right:0;' +
+        'z-index:9999'
+    );
+    banner.innerHTML = (
+        '⚠️ This dashboard renders many interactive plots per tab ' +
+        'and is best viewed on a desktop browser. ' +
+        'Some tabs may not load reliably on mobile.'
+    );
+    // Insert into parent document (Streamlit's iframe wrapper)
+    try {
+        window.parent.document.body.insertBefore(
+            banner, window.parent.document.body.firstChild
+        );
+    } catch (e) {
+        document.body.insertBefore(banner, document.body.firstChild);
+    }
+}
+</script>
+""", height=0)
 
 # ── GDAC download helpers (FTP: ftp.ifremer.fr) ───────────────────────────────
 from ftplib import FTP
