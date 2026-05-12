@@ -11,6 +11,12 @@ files end up in the Streamlit Cloud filesystem cache, and a human visitor
 arriving shortly afterward sees a fully-rendered dashboard immediately
 rather than waiting on the cold-cache download.
 
+v2 changes (vs v1):
+  - Use clear() + type() instead of fill() so React's onChange fires
+  - Press Enter to commit the input (Streamlit submits on Enter)
+  - Verify the input's value after typing, before clicking Download
+  - Retry once if verification fails
+
 Triggered every 6 hours by .github/workflows/keepalive.yml.
 
 Author: Youran Li
@@ -28,12 +34,53 @@ WMO_TO_PRELOAD = "7902198"
 # Streamlit Cloud's sleep page button text and the in-app widgets we drive.
 WAKE_BUTTON_TEXT = "Yes, get this app back up!"
 WMO_INPUT_LABEL = "WMO number"
-DOWNLOAD_BUTTON_TEXT = "Download / refresh from GDAC"  # substring match; emoji-prefixed
+DOWNLOAD_BUTTON_TEXT = "Download / refresh from GDAC"  # substring; emoji-prefixed in app
 
 
 def log(msg: str) -> None:
     """Time-stamped logging so the GitHub Actions log is easy to read."""
     print(f"[{time.strftime('%H:%M:%S')}] {msg}", flush=True)
+
+
+def enter_wmo_and_verify(page, wmo: str, attempt: int = 1) -> bool:
+    """Type WMO into the sidebar input and verify it landed in Streamlit state.
+
+    Returns True on success, False if the value never stuck.
+    """
+    log(f"Entering WMO {wmo} (attempt {attempt})")
+    wmo_input = page.get_by_label(WMO_INPUT_LABEL)
+    try:
+        wmo_input.wait_for(state="visible", timeout=45_000)
+    except PWTimeout:
+        log("WARN: WMO input never became visible")
+        return False
+
+    # Focus + select-all + delete avoids leaving stale default text behind.
+    wmo_input.click()
+    page.wait_for_timeout(300)
+    page.keyboard.press("Control+A")
+    page.keyboard.press("Delete")
+    page.wait_for_timeout(200)
+
+    # Real keystrokes — type() fires onChange / onInput so React state updates.
+    wmo_input.type(wmo, delay=50)
+    page.wait_for_timeout(500)
+
+    # Streamlit text_input commits on Enter (or on blur).
+    page.keyboard.press("Enter")
+
+    # Let Streamlit rerun the script with the new WMO value.
+    page.wait_for_timeout(3_000)
+
+    # Verify: read the input's value back from the DOM.
+    actual = wmo_input.input_value()
+    log(f"Input value after typing: {actual!r}")
+    if actual.strip() == wmo:
+        log("WMO entered successfully")
+        return True
+
+    log(f"WARN: expected {wmo!r}, got {actual!r}")
+    return False
 
 
 def run() -> int:
@@ -58,7 +105,6 @@ def run() -> int:
             browser.close()
             return 1
 
-        # Give the SPA a moment to open the WebSocket and render.
         page.wait_for_timeout(6_000)
 
         # ── 2. If sleeping, click the wake-up button ───────────────────────
@@ -71,44 +117,44 @@ def run() -> int:
         else:
             log("App is already awake")
 
-        # ── 3. Find the WMO input and enter the target float ───────────────
-        log(f"Entering WMO {WMO_TO_PRELOAD} in the sidebar")
-        wmo_input = page.get_by_label(WMO_INPUT_LABEL)
-        try:
-            wmo_input.wait_for(state="visible", timeout=45_000)
-        except PWTimeout:
-            log("WARN: WMO input not visible — app is awake but UI did not finish loading")
-            log("Keepalive succeeded regardless")
+        # ── 3. Enter WMO with verification + one retry ─────────────────────
+        ok = enter_wmo_and_verify(page, WMO_TO_PRELOAD, attempt=1)
+        if not ok:
+            log("Retrying WMO entry after 5s pause…")
+            page.wait_for_timeout(5_000)
+            ok = enter_wmo_and_verify(page, WMO_TO_PRELOAD, attempt=2)
+        if not ok:
+            log("WARN: could not get WMO into the input after 2 tries")
+            log("App is awake but pre-load skipped — exiting cleanly")
             browser.close()
             return 0
 
-        wmo_input.fill(WMO_TO_PRELOAD)
-        # Streamlit applies the value on blur or Enter — press Tab to commit.
-        wmo_input.press("Tab")
-        page.wait_for_timeout(2_000)
-
         # ── 4. Click the GDAC download button ──────────────────────────────
         log("Clicking the GDAC download button")
-        # Use a substring match (has-text) because the actual button label is
-        # "⬇ Download / refresh from GDAC" with a leading emoji.
         download_btn = page.locator(
             f"button:has-text('{DOWNLOAD_BUTTON_TEXT}')"
         ).first
         try:
             download_btn.wait_for(state="visible", timeout=30_000)
         except PWTimeout:
-            log("WARN: download button not found — keepalive succeeded but pre-load skipped")
+            log("WARN: download button not visible — skipping")
             browser.close()
             return 0
 
         download_btn.click()
-        log("Waiting up to 90s for the GDAC fetch + parse to complete")
-        # The dashboard shows a progress bar then a re-rendered page once done.
-        # We do not need to verify completion; even a partial fetch warms the
-        # filesystem cache. Give it a generous wait window.
-        page.wait_for_timeout(90_000)
+        log("Waiting up to 120s for the GDAC fetch + parse to complete")
+        page.wait_for_timeout(120_000)
 
-        log("Done — app awake and float pre-loaded")
+        # ── 5. Final verification: look for the success banner ─────────────
+        # The app shows "Downloaded N files" in green when download succeeds.
+        success_banner = page.locator("text=/Downloaded \\d+ files/")
+        if success_banner.count() > 0:
+            banner_text = success_banner.first.inner_text()
+            log(f"SUCCESS banner: {banner_text}")
+        else:
+            log("No success banner found — download may still be in progress")
+
+        log("Done — app awake and pre-load attempted")
         browser.close()
         return 0
 
